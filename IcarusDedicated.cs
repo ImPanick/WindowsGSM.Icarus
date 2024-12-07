@@ -158,7 +158,7 @@ namespace WindowsGSM.Plugins
                 using (var client = new HttpClient())
                 {
                     string mapUrl = mapUrls[mapName];
-                    string destinationFile = Path.Combine(prospectsPath, $"{mapName.ToLower()}_prospect.json");
+                    string destinationFile = Path.Combine(prospectsPath, $"{mapName.ToLowerInvariant()}_prospect.json");
                     
                     Console.WriteLine($"Downloading map files for {mapName}...");
                     string jsonContent = client.GetStringAsync(mapUrl).Result;
@@ -203,7 +203,6 @@ namespace WindowsGSM.Plugins
         //Fixed Variables which would be the Executable of the Game Server as well as naming the server.
         public override string StartPath => "IcarusServer.exe"; // Path to the Game Server Executable
         public override string FullName => "Icarus Dedicated Server"; // Name of the Server
-        //public bool AllowsEmbedConsole => true;
         public int PortIncrement = 1;
 
         public object QueryMethod = new A2S();
