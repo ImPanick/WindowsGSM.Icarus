@@ -32,6 +32,23 @@ namespace WindowsGSM.Plugins
         private readonly ServerConfig _serverData;
         public string Error, Notice;
 
+        public string AdminPassword, FriendPassword, GuestPassword;
+
+        private static Random random = new Random();
+
+            private string GenerateRandomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+            public void GeneratePasswords()
+        {
+            AdminPassword = GenerateRandomString(8);
+            FriendPassword = GenerateRandomString(8);
+            GuestPassword = GenerateRandomString(8);
+        }
+
         private string GetCurrentSteamId() // This entire process just locates the users' SteamID to use for setting the save files of the .json prospect files (The different maps will be on GitHub repository!)
         {
             try
@@ -211,5 +228,175 @@ namespace WindowsGSM.Plugins
         public int Port = 27015; // Game Server Port
         public int QueryPort = 27016; // Query Port
 
+
+        public async void CreateServerCFG()
+        {
+            GeneratePasswords();
+
+            var serverConfig = new
+            {
+                name = $"{_serverData.ServerName}",
+                password = "",
+                saveDirectory = "./savegame",
+                logDirectory = "./logs",
+                ip = $"{_serverData.ServerIP}",
+                gamePort = Int32.Parse(_serverData.Port),
+                queryPort = Int32.Parse(_serverData.QueryPort),
+                slotCount = Int32.Parse(_serverData.ServerMaxPlayer),
+                gameSettingsPreset = "Default",
+                gameSettings = new
+                {
+                    SessionName=
+                    JoinPassword=
+                    MaxPlayers=
+                    AdminPassword=
+                    ShutdownIfNotJoinedFor=300.000000
+                    ShutdownIfEmptyFor=300.000000
+                    AllowNonAdminsToLaunchProspects=True
+                    AllowNonAdminsToDeleteProspects=False
+                    LoadProspect=
+                    CreateProspect=
+                    ResumeProspect=True
+                    LastProspectName=CHANGE_ME
+                },
+                userGroups = new[]
+                {
+                    new
+                    {
+	                name = "Admin",
+	                password = "Admin" + AdminPassword,
+	                canKickBan = true,
+	            },
+	            new
+	            {
+	                name = "Friend",
+	                password = "Friend" + FriendPassword,
+	                canKickBan = false,
+	            },
+	            new
+	            {
+	                name = "Guest",
+	                password = "Guest" + GuestPassword,
+	                canKickBan = false,
+	            }
+                }
+            };
+
+            // Convert the object to JSON format
+            string jsonContent = JsonConvert.SerializeObject(serverConfig, Formatting.Indented);
+
+            // Specify the file path
+            string filePath = Functions.ServerPath.GetServersServerFiles(_serverData.ServerID, "Icarus_server.json");
+
+            // Write the JSON content to the file
+            File.WriteAllText(filePath, jsonContent);
+        }
+                // - Start server function, return its Process to WindowsGSM
+        public async Task<Process> Start()
+        {
+            string shipExePath = Functions.ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath);
+            if (!File.Exists(shipExePath))
+            {
+                Error = $"{Path.GetFileName(shipExePath)} not found ({shipExePath})";
+                return null;
+            }
+
+            // Prepare start parameter
+            string param = $" {_serverData.ServerParam} ";
+			param += $"-ip=\"{_serverData.ServerIP}\" ";
+            param += $"-gamePort={_serverData.ServerPort} ";
+            param += $"-queryPort={_serverData.ServerQueryPort} ";
+            param += $"-slotCount={_serverData.ServerMaxPlayer} ";
+            param += $"-name=\"\"\"{_serverData.ServerName}\"\"\"";
+
+            // Prepare Process
+            var p = new Process
+            {
+                StartInfo =
+                {
+                    WorkingDirectory = ServerPath.GetServersServerFiles(_serverData.ServerID),
+                    FileName = shipExePath,
+                    Arguments = param.ToString(),
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = false
+                },
+                EnableRaisingEvents = true
+            };
+
+            // Set up Redirect Input and Output to WindowsGSM Console if EmbedConsole is on
+            if (AllowsEmbedConsole)
+            {
+                p.StartInfo.RedirectStandardInput = true;
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                var serverConsole = new ServerConsole(_serverData.ServerID);
+                p.OutputDataReceived += serverConsole.AddOutput;
+                p.ErrorDataReceived += serverConsole.AddOutput;
+            }
+
+            // Start Process
+            try
+            {
+                p.Start();
+                if (AllowsEmbedConsole)
+                {
+                    p.BeginOutputReadLine();
+                    p.BeginErrorReadLine();
+                }
+                return p;
+            }
+            catch (Exception e)
+            {
+                Error = e.Message;
+                return null; // return null if fail to start
+            }
+        }
+
+        // - Stop server function
+        public async Task Stop(Process p)
+        {
+            await Task.Run(() =>
+            {
+                Functions.ServerConsole.SetMainWindow(p.MainWindowHandle);
+                Functions.ServerConsole.SendWaitToMainWindow("^c");
+                p.WaitForExit(2000);
+            });
+        }
+        public async Task<Process> Install()
+        {
+            var steamCMD = new Installer.SteamCMD();
+            Process p = await steamCMD.Install(_serverData.ServerID, string.Empty, AppId, true, loginAnonymous);
+            Error = steamCMD.Error;
+            return p;
+        }
+        public async Task<Process> Update(bool validate = false, string custom = null)
+        {
+            var (p, error) = await Installer.SteamCMD.UpdateEx(serverData.ServerID, AppId, validate, custom: custom, loginAnonymous: loginAnonymous);
+            Error = error;
+            await Task.Run(() => { p.WaitForExit(); });
+
+            return p;
+        }
+
+        public bool IsInstallValid()
+        {
+            return File.Exists(ServerPath.GetServersServerFiles(_serverData.ServerID, StartPath));
+        }
+        public bool IsImportValid(string path)
+        {
+            string importPath = Path.Combine(path, StartPath);
+            Error = $"Invalid Path! Fail to find {Path.GetFileName(StartPath)}";
+            return File.Exists(importPath);
+        }
+        public string GetLocalBuild()
+        {
+            var steamCMD = new Installer.SteamCMD();
+            return steamCMD.GetLocalBuild(_serverData.ServerID, AppId);
+        }
+        public async Task<string> GetRemoteBuild()
+        {
+            var steamCMD = new Installer.SteamCMD();
+            return await steamCMD.GetRemoteBuild(AppId);
+        }
     }
 }
