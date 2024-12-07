@@ -1,0 +1,28 @@
+{
+	"ProspectInfo":
+	{
+		"ProspectID": "Styx",
+		"ClaimedAccountID": "76561198042982784",
+		"ClaimedAccountCharacter": 2,
+		"ProspectDTKey": "OpenWorld_Styx",
+		"FactionMissionDTKey": "",
+		"LobbyName": "",
+		"ExpireTime": -1,
+		"ProspectState": "Active",
+		"AssociatedMembers": [
+			{
+			}
+		],
+		"Cost": 0,
+		"Reward": 0,
+		"Difficulty": "Medium",
+		"Insurance": false,
+		"NoRespawns": false,
+		"ElapsedTime": 66,
+		"SelectedDropPoint": 0,
+		"CustomSettings": []
+	},
+	"ProspectBlob":
+	{
+	}
+}
