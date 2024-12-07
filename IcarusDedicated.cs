@@ -16,8 +16,8 @@ namespace WindowsGSM.Plugins
         public Plugin Plugin = new Plugin
         {
             Name = "Icarus",
-            Author = "ImPanicking", // Chief Operations Officer of Cybertooth Security Solutions, CISSP, CEH, CCNA, CCNP, Security+, CloudSecurity, and a whole lot of other stuff! (I'm also a bit of a nerd).
-            Description = "Icarus Game Server",
+            Author = "ImPanicking",
+            Description = "Icarus Dedicated Server",
             Version = "1.0.0",
             url = "https://github.com/ImPanick/WindowsGSM.Icarus", // GitHub Repo for the plugin
             color = "#ffb121" // Icarus' Gold-ish Yellow
@@ -127,9 +127,14 @@ namespace WindowsGSM.Plugins
                 // Define the GitHub raw URLs for each map
                 Dictionary<string, string> mapUrls = new()
                 {
-                    { "Prometheus", "https://raw.githubusercontent.com/ImPanick/IcarusWorlds/Prometheus.json" },
-                    { "Styx", "https://raw.githubusercontent.com/ImPanick/IcarusWorlds/Styx.json" },
-                    { "Olympus", "https://raw.githubusercontent.com/ImPanick/IcarusWorlds/Olympus.json" }
+                    { "Prometheus", "https://raw.githubusercontent.com/ImPanick/WindowsGSM.Icarus/refs/heads/main/IcarusWorlds/Prometheus/Prometheus.json" },
+                    { "Styx", "https://raw.githubusercontent.com/ImPanick/WindowsGSM.Icarus/refs/heads/main/IcarusWorlds/Styx/Styx.json" },
+                    { "Olympus", "https://raw.githubusercontent.com/ImPanick/WindowsGSM.Icarus/refs/heads/main/IcarusWorlds/Olympus/Olympus.json" }
+
+                    //OLD URLS (these are slightly shorter URL's that are for the maps.)
+                    //{ "Prometheus", "https://raw.githubusercontent.com/ImPanick/prometheus-files/main/prospect.json" },
+                    //{ "Styx", "https://raw.githubusercontent.com/ImPanick/styx-files/main/prospect.json" },
+                    //{ "Olympus", "https://raw.githubusercontent.com/ImPanick/olympus-files/main/prospect.json" }
                 };
 
                 // Get user's Steam ID
@@ -195,10 +200,6 @@ namespace WindowsGSM.Plugins
             ");
         }
 
-
-
-
-
         //Fixed Variables which would be the Executable of the Game Server as well as naming the server.
         public override string StartPath => "IcarusServer.exe"; // Path to the Game Server Executable
         public override string FullName => "Icarus Dedicated Server"; // Name of the Server
@@ -210,9 +211,6 @@ namespace WindowsGSM.Plugins
         //Game Server Ports
         public int Port = 27015; // Game Server Port
         public int QueryPort = 27016; // Query Port
-
-
-
 
     }
 }
