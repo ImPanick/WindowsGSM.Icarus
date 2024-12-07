@@ -14,3 +14,5 @@ Upon boot, the server config's are generated. They will then query the user on w
 server manager (by way of plugin) will download the respective world's .json file freshly created and automatically move it into the above path.
 
 The server will then resume booting, and the host should be visible online and bound to ports.
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/86a613ae9fdf479790e414a1836d426d)](https://app.codacy.com?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
