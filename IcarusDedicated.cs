@@ -25,8 +25,8 @@ namespace WindowsGSM.Plugins
 
         //SteamCMD Installer setup/Initialization (Will probe for updates)
         public override bool loginAnonymous => true;
-        public override bool AppID => "2089300"; // Dedicated Game Server AppID for Icarus!
-
+        public override string AppId => "2089300"; // Dedicated Game Server AppID for Icarus!
+        public bool AllowsEmbedConsole = true;
         //Game Server Setup
         public Icarus(ServerConfig serverData) : base(serverData) => base.serverData = serverData;
         private readonly ServerConfig _serverData;
@@ -61,7 +61,7 @@ namespace WindowsGSM.Plugins
                     return null;
                 }
 
-                // Get Steam installation path from registry -- This is going to look Very sketchy on the surface but I promise it works and is not nefarious! (It's open source for crying out loud lol)
+                // Get Steam installation path from registry and reads the loginusers.vdf file for the SteamID - This is passed as SteamID to be used to locate the prospect save files (Under User AppData directory)..
                 string steamPath = Registry.GetValue(
                     @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam",
                     "InstallPath",
@@ -85,7 +85,7 @@ namespace WindowsGSM.Plugins
                 string[] lines = File.ReadAllLines(loginUsersPath);
                 foreach (string line in lines)
                 {
-                    // Look for the "AccountID" or "steamid" entry that has "MostRecent" "1" -- See I am ONLY pulling the ID!
+                    // Look for the "AccountID" or "steamid" entry that has "MostRecent" and pass to the SteamId string.
                     if (line.Contains("\"steamid\""))
                     {
                         string steamId = line.Split('"')[3].Trim();
@@ -105,34 +105,57 @@ namespace WindowsGSM.Plugins
 
         private bool ScanAndConfigureServer()
         {
-            // ... existing config file checking code ...
+            // Check for existing config files
+            string configPath = Path.Combine(ServerPath, "Saved", "Config", "WindowsServer");
+            bool hasGameUserSettings = File.Exists(Path.Combine(configPath, "GameUserSettings.ini"));
+            bool hasServerSettings = File.Exists(Path.Combine(configPath, "ServerSettings.ini"));
 
-            string selectedMap = mapChoice switch
+            // If both config files exist, return true
+            if (hasGameUserSettings && hasServerSettings)
             {
-                1 => "Prometheus",
-                2 => "Styx",
-                3 => "Olympus",
-                _ => "Olympus" // Default fallback will be Olympus
-            };
+                Console.WriteLine("Existing server configuration found.");
+                return true;
+            }
 
-            // Create configuration files
+            // Prompt user for map selection
+            Console.WriteLine("\nSelect Open World Map:");
+            Console.WriteLine("1. Prometheus");
+            Console.WriteLine("2. Styx");
+            Console.WriteLine("3. Olympus");
+            
+            int mapChoice;
+            do
+            {
+                Console.Write("\nEnter map number (1-3): ");
+            } while (!int.TryParse(Console.ReadLine(), out mapChoice) || mapChoice < 1 || mapChoice > 3);
+
+            string selectedMap;
+            switch (mapChoice)
+            {
+                case 1:
+                    selectedMap = "Prometheus";
+                    break;
+                case 2:
+                    selectedMap = "Styx";
+                    break;
+                case 3:
+                    selectedMap = "Olympus";
+                    break;
+                default:
+                    selectedMap = "Prometheus";
+                    break;
+            }
+
+            // Create configuration files with selected map
             try
             {
                 Directory.CreateDirectory(configPath);
                 CreateConfigFiles(configPath, selectedMap);
-                
-                // Download and move map files
-                if (!DownloadAndSetupMapFiles(selectedMap))
-                {
-                    Console.WriteLine("Failed to download or setup map files.");
-                    return false;
-                }
-                
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during server configuration: {ex.Message}");
+                Console.WriteLine($"Error creating configuration files: {ex.Message}");
                 return false;
             }
         }
@@ -246,18 +269,18 @@ namespace WindowsGSM.Plugins
                 gameSettingsPreset = "Default",
                 gameSettings = new
                 {
-                    SessionName=
-                    JoinPassword=
-                    MaxPlayers=
-                    AdminPassword=
-                    ShutdownIfNotJoinedFor=300.000000
-                    ShutdownIfEmptyFor=300.000000
-                    AllowNonAdminsToLaunchProspects=True
-                    AllowNonAdminsToDeleteProspects=False
-                    LoadProspect=
-                    CreateProspect=
-                    ResumeProspect=True
-                    LastProspectName=CHANGE_ME
+                    SessionName = _serverData.ServerName,
+                    JoinPassword = "",
+                    MaxPlayers = Int32.Parse(_serverData.ServerMaxPlayer),
+                    AdminPassword = AdminPassword,
+                    ShutdownIfNotJoinedFor = 300.000000,
+                    ShutdownIfEmptyFor = 300.000000,
+                    AllowNonAdminsToLaunchProspects = true,
+                    AllowNonAdminsToDeleteProspects = false,
+                    LoadProspect = "",
+                    CreateProspect = "",
+                    ResumeProspect = true,
+                    LastProspectName = "CHANGE_ME"
                 },
                 userGroups = new[]
                 {
