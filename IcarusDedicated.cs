@@ -25,8 +25,8 @@ namespace WindowsGSM.Plugins
 
         //SteamCMD Installer setup/Initialization (Will probe for updates)
         public override bool loginAnonymous => true;
-        public override string AppId => "2089300"; // Dedicated Game Server AppID for Icarus!
-        public bool AllowsEmbedConsole = true;
+        public override bool AppID => "2089300"; // Dedicated Game Server AppID for Icarus!
+
         //Game Server Setup
         public Icarus(ServerConfig serverData) : base(serverData) => base.serverData = serverData;
         private readonly ServerConfig _serverData;
@@ -105,57 +105,34 @@ namespace WindowsGSM.Plugins
 
         private bool ScanAndConfigureServer()
         {
-            // Check for existing config files
-            string configPath = Path.Combine(ServerPath, "Saved", "Config", "WindowsServer");
-            bool hasGameUserSettings = File.Exists(Path.Combine(configPath, "GameUserSettings.ini"));
-            bool hasServerSettings = File.Exists(Path.Combine(configPath, "ServerSettings.ini"));
-
-            // If both config files exist, return true
-            if (hasGameUserSettings && hasServerSettings)
+            // ... existing config file checking code ...
+            Console.WriteLine("Please select a Map to configure! Edit the saved JSON to set your ownership as your own personal account's ID.");
+            string selectedMap = mapChoice switch
             {
-                Console.WriteLine("Existing server configuration found.");
-                return true;
-            }
+                1 => "Prometheus",
+                2 => "Styx",
+                3 => "Olympus",
+                _ => "Olympus" // Default fallback will be Olympus
+            };
 
-            // Prompt user for map selection
-            Console.WriteLine("\nSelect Open World Map:");
-            Console.WriteLine("1. Prometheus");
-            Console.WriteLine("2. Styx");
-            Console.WriteLine("3. Olympus");
-            
-            int mapChoice;
-            do
-            {
-                Console.Write("\nEnter map number (1-3): ");
-            } while (!int.TryParse(Console.ReadLine(), out mapChoice) || mapChoice < 1 || mapChoice > 3);
-
-            string selectedMap;
-            switch (mapChoice)
-            {
-                case 1:
-                    selectedMap = "Prometheus";
-                    break;
-                case 2:
-                    selectedMap = "Styx";
-                    break;
-                case 3:
-                    selectedMap = "Olympus";
-                    break;
-                default:
-                    selectedMap = "Prometheus";
-                    break;
-            }
-
-            // Create configuration files with selected map
+            // Create configuration files
             try
             {
                 Directory.CreateDirectory(configPath);
                 CreateConfigFiles(configPath, selectedMap);
+                
+                // Download and move map files
+                if (!DownloadAndSetupMapFiles(selectedMap))
+                {
+                    Console.WriteLine("Failed to download or setup map files.");
+                    return false;
+                }
+                
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating configuration files: {ex.Message}");
+                Console.WriteLine($"Error during server configuration: {ex.Message}");
                 return false;
             }
         }
@@ -269,18 +246,18 @@ namespace WindowsGSM.Plugins
                 gameSettingsPreset = "Default",
                 gameSettings = new
                 {
-                    SessionName = _serverData.ServerName,
-                    JoinPassword = "",
-                    MaxPlayers = Int32.Parse(_serverData.ServerMaxPlayer),
-                    AdminPassword = AdminPassword,
-                    ShutdownIfNotJoinedFor = 300.000000,
-                    ShutdownIfEmptyFor = 300.000000,
-                    AllowNonAdminsToLaunchProspects = true,
-                    AllowNonAdminsToDeleteProspects = false,
-                    LoadProspect = "",
-                    CreateProspect = "",
-                    ResumeProspect = true,
-                    LastProspectName = "CHANGE_ME"
+                    SessionName=$"{_serverData.ServerName}",
+                    JoinPassword="",
+                    MaxPlayers=Int32.Parse(_serverData.ServerMaxPlayer),
+                    AdminPassword=AdminPassword,
+                    ShutdownIfNotJoinedFor=300.000000,
+                    ShutdownIfEmptyFor=300.000000,
+                    AllowNonAdminsToLaunchProspects=True,
+                    AllowNonAdminsToDeleteProspects=False,
+                    LoadProspect="",
+                    CreateProspect="",
+                    ResumeProspect=True,
+                    LastProspectName=$"{mapName.ToLowerInvariant()}_prospect.json" // This prospect name is the name of the .json file that is used to load the map.
                 },
                 userGroups = new[]
                 {
