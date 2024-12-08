@@ -156,7 +156,6 @@ namespace WindowsGSM.Plugins
         {
             try
             {
-                // Fix: Use explicit Dictionary initialization instead of new()
                 Dictionary<string, string> mapUrls = new Dictionary<string, string>
                 {
                     { "Prometheus", "https://raw.githubusercontent.com/ImPanick/WindowsGSM.Icarus/refs/heads/main/IcarusWorlds/Prometheus/Prometheus.json" },
@@ -234,7 +233,7 @@ namespace WindowsGSM.Plugins
 
         //Fixed Variables which would be the Executable of the Game Server as well as naming the server.
         public override string StartPath => "IcarusServer.exe"; // Path to the Game Server Executable
-        public new string FullName => "Icarus Dedicated Server"; // Name of the Server
+        public string FullName => "Icarus Dedicated Server"; // Name of the Server
         public int PortIncrement = 1;
 
         public object QueryMethod = new A2S();
