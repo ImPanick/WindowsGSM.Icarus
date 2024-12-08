@@ -27,6 +27,7 @@ namespace WindowsGSM.Plugins
 
         //SteamCMD Installer setup/Initialization (Will probe for updates if you check bottom of script)
         public override bool loginAnonymous => true;
+        public bool AllowsEmbedConsole = true;
         public override string AppId => "2089300";
 
         //Game Server Setup
@@ -45,7 +46,7 @@ namespace WindowsGSM.Plugins
             return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
-            public void GeneratePasswords()
+        private void GeneratePasswords()
         {
             AdminPassword = GenerateRandomString(8);
             FriendPassword = GenerateRandomString(8);
@@ -250,7 +251,6 @@ namespace WindowsGSM.Plugins
             var serverConfig = new
             {
                 name = $"{_serverData.ServerName}",
-                password = "",
                 saveDirectory = "./savegame",
                 logDirectory = "./logs",
                 ip = $"{_serverData.ServerIP}",
@@ -261,7 +261,6 @@ namespace WindowsGSM.Plugins
                 gameSettings = new
                 {
                     SessionName=$"{_serverData.ServerName}",
-                    JoinPassword="",
                     MaxPlayers=Int32.Parse(_serverData.ServerMaxPlayer),
                     ShutdownIfNotJoinedFor=300.000000,
                     ShutdownIfEmptyFor=300.000000,
